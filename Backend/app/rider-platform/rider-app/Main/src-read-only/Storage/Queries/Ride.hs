@@ -44,3 +44,8 @@ updateDestinationReachedAt :: (EsqDBFlow m r, MonadFlow m, CacheFlow m r) => (Ke
 updateDestinationReachedAt destinationReachedAt id = do
   _now <- getCurrentTime
   updateOneWithKV [Se.Set Beam.destinationReachedAt destinationReachedAt, Se.Set Beam.updatedAt _now] [Se.Is Beam.id $ Se.Eq (Kernel.Types.Id.getId id)]
+
+updateTipByRideId :: (EsqDBFlow m r, MonadFlow m, CacheFlow m r) => (Kernel.Prelude.Maybe Kernel.Types.Common.Price -> Kernel.Types.Id.Id Domain.Types.Ride.Ride -> m ())
+updateTipByRideId tipAmount id = do
+  _now <- getCurrentTime
+  updateOneWithKV [Se.Set Beam.tipAmount (Kernel.Prelude.fmap (.amount) tipAmount), Se.Set Beam.updatedAt _now] [Se.Is Beam.id $ Se.Eq (Kernel.Types.Id.getId id)]

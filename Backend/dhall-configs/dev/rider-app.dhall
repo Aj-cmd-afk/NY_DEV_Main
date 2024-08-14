@@ -186,6 +186,8 @@ let RiderJobType =
       | CallPoliceApi
       | SafetyCSAlert
       | CheckExotelCallStatusAndNotifyBPP
+      | ExecutePaymentIntent
+      | CancelExecutePaymentIntent
       | OtherJobTypes
       >
 
@@ -195,6 +197,8 @@ let jobInfoMapx =
         , mapValue = True
         }
       , { mapKey = RiderJobType.SafetyIVR, mapValue = False }
+      , { mapKey = RiderJobType.ExecutePaymentIntent, mapValue = True }
+      , { mapKey = RiderJobType.CancelExecutePaymentIntent, mapValue = True }
       , { mapKey = RiderJobType.CallPoliceApi, mapValue = False }
       , { mapKey = RiderJobType.SafetyCSAlert, mapValue = False }
       , { mapKey = RiderJobType.CheckExotelCallStatusAndNotifyBPP

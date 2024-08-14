@@ -49,9 +49,10 @@ import qualified Kernel.Types.Beckn.Context as Context
 import Kernel.Types.Confidence
 import Kernel.Types.Id
 import Kernel.Utils.Common
+import Lib.Scheduler.JobStorageType.SchedulerType (createJobIn)
 import Lib.SessionizerMetrics.Types.Event
 import qualified SharedLogic.CallBPP as CallBPP
-import qualified SharedLogic.CallBPPInternal as CallBPPInternal
+import SharedLogic.JobScheduler
 import qualified SharedLogic.MerchantConfig as SMC
 import qualified SharedLogic.MessageBuilder as MessageBuilder
 import SharedLogic.Payment as SPayment
@@ -59,8 +60,11 @@ import qualified SharedLogic.ScheduledNotifications as SN
 import qualified Storage.CachedQueries.BppDetails as CQBPP
 import qualified Storage.CachedQueries.Exophone as CQExophone
 import qualified Storage.CachedQueries.Merchant as CQM
+<<<<<<< HEAD
 import qualified Storage.CachedQueries.Merchant.MerchantOperatingCity as CQMOC
 import qualified Storage.CachedQueries.Merchant.MerchantPushNotification as CPN
+=======
+>>>>>>> 7947fdf1d9 (backend/enh: stripe ineg in ride flow)
 import qualified Storage.CachedQueries.Merchant.MerchantServiceUsageConfig as QMSUC
 import qualified Storage.CachedQueries.Merchant.RiderConfig as QRiderConfig
 import qualified Storage.CachedQueries.MerchantConfig as CMC
@@ -309,6 +313,7 @@ buildRide req mbMerchant booking BookingDetails {..} previousRideEndPos now stat
         safetyJourneyStatus = Nothing,
         driverImage = fileUrl,
         destinationReachedAt = Nothing,
+        tipAmount = Nothing,
         ..
       }
 
@@ -566,12 +571,12 @@ rideCompletedReqHandler ::
     SchedulerFlow r,
     HasHttpClientOptions r c,
     HasLongDurationRetryCfg r c,
-    -- HasShortDurationRetryCfg r c, -- uncomment for test update api
     HasField "minTripDistanceForReferralCfg" r (Maybe Distance),
     HasFlowEnv m r '["internalEndPointHashMap" ::: HM.HashMap BaseUrl BaseUrl],
     HasBAPMetrics m r,
     EventStreamFlow m r,
-    HasField "hotSpotExpiry" r Seconds
+    HasField "hotSpotExpiry" r Seconds,
+    HasShortDurationRetryCfg r c
   ) =>
   ValidatedRideCompletedReq ->
   m ()
@@ -619,6 +624,18 @@ rideCompletedReqHandler ValidatedRideCompletedReq {..} = do
         when (totalCount + 1 == 1) $ do
           mbMerchantPN <- CPN.findMatchingMerchantPN booking.merchantOperatingCityId "FIRST_RIDE_EVENT" person.language
           Notify.notifyFirstRideEvent booking.riderId (Utils.mapServiceTierToCategory booking.vehicleServiceTierType) (mbMerchantPN <&> (.title)) (mbMerchantPN <&> (.body))
+  -- we should create job for collecting money from customer
+  let onlinePayment = maybe False (.onlinePayment) mbMerchant
+  when onlinePayment $ do
+    let applicationFeeAmountBreakups = ["INSURANCE_CHARGE", "CARD_CHARGES_ON_FARE", "CARD_CHARGES_FIXED"]
+        applicationFeeAmount = sum $ map (.amount.amount) $ filter (\fp -> fp.description `elem` applicationFeeAmountBreakups) fareBreakups
+    riderConfig <- QRiderConfig.findByMerchantOperatingCityId booking.merchantOperatingCityId >>= fromMaybeM (InternalError "RiderConfig not found")
+    maxShards <- asks (.maxShards)
+    let scheduleAfter = riderConfig.executePaymentDelay
+        executePaymentIntentJobData = ExecutePaymentIntentJobData {personId = person.id, rideId = ride.id, fare = totalFare, applicationFeeAmount = applicationFeeAmount}
+    logDebug $ "Scheduling execute payment intent job for order: " <> show scheduleAfter
+    createJobIn @_ @'ExecutePaymentIntent scheduleAfter maxShards (executePaymentIntentJobData :: ExecutePaymentIntentJobData)
+
   triggerRideEndEvent RideEventData {ride = updRide, personId = booking.riderId, merchantId = booking.merchantId}
   triggerBookingCompletedEvent BookingEventData {booking = booking{status = DRB.COMPLETED}}
   when shouldUpdateRideComplete $ void $ QP.updateHasTakenValidRide booking.riderId
@@ -713,7 +730,9 @@ bookingCancelledReqHandler ::
     HasLongDurationRetryCfg r c,
     HasFlowEnv m r '["internalEndPointHashMap" ::: HM.HashMap BaseUrl BaseUrl],
     HasBAPMetrics m r,
-    EventStreamFlow m r
+    EventStreamFlow m r,
+    SchedulerFlow r,
+    HasShortDurationRetryCfg r c
   ) =>
   ValidatedBookingCancelledReq ->
   m ()
@@ -733,7 +752,9 @@ cancellationTransaction ::
     HasLongDurationRetryCfg r c,
     HasFlowEnv m r '["internalEndPointHashMap" ::: HM.HashMap BaseUrl BaseUrl],
     HasBAPMetrics m r,
-    EventStreamFlow m r
+    EventStreamFlow m r,
+    SchedulerFlow r,
+    HasShortDurationRetryCfg r c
   ) =>
   DRB.Booking ->
   Maybe DRide.Ride ->
@@ -767,28 +788,15 @@ cancellationTransaction booking mbRide cancellationSource cancellationFee = do
   fork "Cancellation Settlement" $ do
     whenJust cancellationFee $ \fee -> do
       riderConfig <- QRiderConfig.findByMerchantOperatingCityId booking.merchantOperatingCityId >>= fromMaybeM (InternalError "RiderConfig not found")
-      merchant <- CQM.findById booking.merchantId >>= fromMaybeM (MerchantNotFound booking.merchantId.getId)
       person <- QP.findById booking.riderId >>= fromMaybeM (PersonNotFound booking.riderId.getId)
-      merchantCity <- CQMOC.findById booking.merchantOperatingCityId >>= fromMaybeM (MerchantOperatingCityNotFound booking.merchantOperatingCityId.getId)
-      mobileNumber <- mapM decrypt person.mobileNumber >>= fromMaybeM (PersonFieldNotPresent "mobileNumber")
       case (riderConfig.settleCancellationFeeBeforeNextRide, mbRide, person.mobileCountryCode) of
-        (Just True, Just ride, Just countryCode) -> do
-          when (isNothing ride.cancellationFeeIfCancelled) $ do
-            QRide.updateCancellationFeeIfCancelledField (Just fee.amount) ride.id
-          SPayment.makeCancellationPayment booking.merchantId booking.merchantOperatingCityId booking.riderId ride fee
-          --TODO: We can move this to stripe confirmation of payment
-          void $
-            CallBPPInternal.customerCancellationDuesSync
-              (merchant.driverOfferApiKey)
-              (merchant.driverOfferBaseUrl)
-              (merchant.driverOfferMerchantId)
-              mobileNumber
-              countryCode
-              (Just fee.amount)
-              cancellationFee
-              Nothing
-              True
-              (merchantCity.city)
+        (Just True, Just ride, Just _countryCode) -> do
+          -- creating cancellation execution job which charges cancellation fee from users stripe account
+          maxShards <- asks (.maxShards)
+          let scheduleAfter = riderConfig.cancellationPaymentDelay
+              cancelExecutePaymentIntentJobData = CancelExecutePaymentIntentJobData {bookingId = booking.id, personId = person.id, cancellationAmount = fee, rideId = ride.id}
+          logDebug $ "Scheduling cancel execute payment intent job for order: " <> show scheduleAfter
+          createJobIn @_ @'CancelExecutePaymentIntent scheduleAfter maxShards (cancelExecutePaymentIntentJobData :: CancelExecutePaymentIntentJobData)
         _ -> pure ()
   unless (cancellationSource == DBCR.ByUser) $
     QBCR.upsert bookingCancellationReason

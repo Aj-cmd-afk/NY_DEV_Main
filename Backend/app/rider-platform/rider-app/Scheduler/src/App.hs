@@ -38,6 +38,7 @@ import SharedLogic.JobScheduler
 import "rider-app" SharedLogic.Scheduler.Jobs.CallPoliceApi
 import "rider-app" SharedLogic.Scheduler.Jobs.CheckExotelCallStatusAndNotifyBPP
 import "rider-app" SharedLogic.Scheduler.Jobs.CheckPNAndSendSMS
+import "rider-app" SharedLogic.Scheduler.Jobs.ExecutePaymentIntent
 import "rider-app" SharedLogic.Scheduler.Jobs.SafetyCSAlert
 import "rider-app" SharedLogic.Scheduler.Jobs.SafetyIVR
 import "rider-app" SharedLogic.Scheduler.Jobs.ScheduledRideNotificationsToRider
@@ -63,6 +64,8 @@ schedulerHandle flowRt env =
           & putJobHandlerInList (liftIO . runFlowR flowRt env . sendCallPoliceApi)
           & putJobHandlerInList (liftIO . runFlowR flowRt env . checkExotelCallStatusAndNotifyBPP)
           & putJobHandlerInList (liftIO . runFlowR flowRt env . sendSafetyCSAlert)
+          & putJobHandlerInList (liftIO . runFlowR flowRt env . sendExecutePaymentIntent)
+          & putJobHandlerInList (liftIO . runFlowR flowRt env . sendCancelExecutePaymentIntent)
     }
 
 runRiderAppScheduler ::

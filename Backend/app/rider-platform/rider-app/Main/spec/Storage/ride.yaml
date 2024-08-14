@@ -101,6 +101,7 @@ Ride:
     favCount: Maybe Int
     safetyJourneyStatus: Maybe SosJourneyStatus
     destinationReachedAt: Maybe UTCTime
+    tipAmount: Maybe Price
 
   sqlType:
     allowedEditLocationAttempts: int
@@ -131,6 +132,7 @@ Ride:
     vehicleVariant: character varying(60)
     driverNumberHash: bytea
     driverAlternateNumberHash: bytea
+    tipAmount: numeric(30,2)
 
 # FIXME separate distanceUnit/currency for each column
   beamFields:
@@ -163,6 +165,8 @@ Ride:
     driverAlternateNumber:
       driverAlternateNumberEncrypted: Maybe Text
       driverAlternateNumberHash: Maybe DbHash
+    tipAmount:
+      tipAmount: Maybe HighPrecMoney
 
   fromTType:
     toLocation: Storage.Queries.Extra.Transformers.Ride.getToLocation id bookingId merchantId merchantOperatingCityId|IM
@@ -184,6 +188,7 @@ Ride:
     onlinePayment: Kernel.Prelude.fromMaybe False onlinePayment|E
     driverPhoneNumber: EncryptedHashed <$> (Encrypted <$> driverNumberEncrypted) <*> driverNumberHash|E
     driverAlternateNumber: EncryptedHashed <$> (Encrypted <$> driverAlternateNumberEncrypted) <*> driverAlternateNumberHash|E
+    tipAmount: fmap (Kernel.Types.Common.mkPrice currency) tipAmount|E
 
   # distanceUnit should be the same for all fields
   toTType:
@@ -213,6 +218,7 @@ Ride:
     driverNumberHash: (driverPhoneNumber <&> (.hash))|E
     driverAlternateNumberEncrypted: (driverAlternateNumber <&> unEncrypted . (.encrypted))|E
     driverAlternateNumberHash: (driverAlternateNumber <&> (.hash))|E
+    tipAmount: Kernel.Prelude.fmap (.amount)|I
   beamType:
     fare: Maybe HighPrecMoney
     totalFare: Maybe HighPrecMoney
@@ -226,6 +232,7 @@ Ride:
     onlinePayment: Maybe Bool
     clientModelName: Maybe Text
     clientManufacturer: Maybe Text
+    tipAmount: Maybe HighPrecMoney
 
   constraints:
     id: PrimaryKey
@@ -257,6 +264,9 @@ Ride:
     updateDestinationReachedAt:
       kvFunction: updateOneWithKV
       params: [destinationReachedAt]
+    updateTipByRideId:
+      kvFunction: updateOneWithKV
+      params: [tipAmount]
       where: id
   excludedDefaultQueries:
     - create
