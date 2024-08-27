@@ -64,7 +64,7 @@ data RideE e = Ride
     merchantOperatingCityId :: Kernel.Prelude.Maybe (Kernel.Types.Id.Id Domain.Types.MerchantOperatingCity.MerchantOperatingCity),
     onlinePayment :: Kernel.Prelude.Bool,
     otp :: Kernel.Prelude.Text,
-    paymentDone :: Kernel.Prelude.Bool,
+    paymentStatus :: Domain.Types.Ride.PaymentStatus,
     rideEndTime :: Kernel.Prelude.Maybe Kernel.Prelude.UTCTime,
     rideRating :: Kernel.Prelude.Maybe Kernel.Prelude.Int,
     rideStartTime :: Kernel.Prelude.Maybe Kernel.Prelude.UTCTime,
@@ -140,7 +140,7 @@ instance EncryptedItem Ride where
           merchantOperatingCityId = merchantOperatingCityId entity,
           onlinePayment = onlinePayment entity,
           otp = otp entity,
-          paymentDone = paymentDone entity,
+          paymentStatus = paymentStatus entity,
           rideEndTime = rideEndTime entity,
           rideRating = rideRating entity,
           rideStartTime = rideStartTime entity,
@@ -208,7 +208,7 @@ instance EncryptedItem Ride where
             merchantOperatingCityId = merchantOperatingCityId entity,
             onlinePayment = onlinePayment entity,
             otp = otp entity,
-            paymentDone = paymentDone entity,
+            paymentStatus = paymentStatus entity,
             rideEndTime = rideEndTime entity,
             rideRating = rideRating entity,
             rideStartTime = rideStartTime entity,
@@ -242,6 +242,8 @@ instance EncryptedItem' Ride where
 
 data BPPRide = BPPRide {} deriving (Generic, Show, ToJSON, FromJSON, ToSchema)
 
+data PaymentStatus = Completed | NotInitiated | Initiated | Cancelled | Failed deriving (Eq, Ord, Show, Read, Generic, ToJSON, FromJSON, ToSchema)
+
 data RideStatus = UPCOMING | NEW | INPROGRESS | COMPLETED | CANCELLED deriving (Eq, Ord, Show, Read, Generic, ToJSON, FromJSON, ToSchema, ToParamSchema)
 
 data SosJourneyStatus
@@ -253,6 +255,8 @@ data SosJourneyStatus
   deriving (Eq, Ord, Show, Read, Generic, ToJSON, FromJSON, ToSchema)
 
 data UnexpectedConditionStage = DriverDeviated | UnusualStop | UnsafeArea deriving (Eq, Ord, Show, Read, Generic, ToJSON, FromJSON, ToSchema)
+
+$(Tools.Beam.UtilsTH.mkBeamInstancesForEnumAndList ''PaymentStatus)
 
 $(Tools.Beam.UtilsTH.mkBeamInstancesForEnumAndList ''RideStatus)
 

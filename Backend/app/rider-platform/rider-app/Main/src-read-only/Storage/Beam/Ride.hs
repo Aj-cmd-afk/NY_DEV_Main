@@ -68,7 +68,7 @@ data RideT f = RideT
     merchantOperatingCityId :: B.C f (Kernel.Prelude.Maybe Kernel.Prelude.Text),
     onlinePayment :: B.C f (Kernel.Prelude.Maybe Kernel.Prelude.Bool),
     otp :: B.C f Kernel.Prelude.Text,
-    paymentDone :: B.C f (Kernel.Prelude.Maybe Kernel.Prelude.Bool),
+    paymentStatus :: B.C f (Kernel.Prelude.Maybe Domain.Types.Ride.PaymentStatus),
     rideEndTime :: B.C f (Kernel.Prelude.Maybe Kernel.Prelude.UTCTime),
     rideRating :: B.C f (Kernel.Prelude.Maybe Kernel.Prelude.Int),
     rideStartTime :: B.C f (Kernel.Prelude.Maybe Kernel.Prelude.UTCTime),
@@ -78,6 +78,7 @@ data RideT f = RideT
     showDriversPreviousRideDropLoc :: B.C f (Kernel.Prelude.Maybe Kernel.Prelude.Bool),
     startOdometerReading :: B.C f (Kernel.Prelude.Maybe Kernel.Types.Common.Centesimal),
     status :: B.C f Domain.Types.Ride.RideStatus,
+    tipAmount :: B.C f (Kernel.Prelude.Maybe Kernel.Types.Common.HighPrecMoney),
     tollConfidence :: B.C f (Kernel.Prelude.Maybe Kernel.Types.Confidence.Confidence),
     totalFare :: B.C f (Kernel.Prelude.Maybe Kernel.Types.Common.HighPrecMoney),
     trackingUrl :: B.C f (Kernel.Prelude.Maybe Kernel.Prelude.Text),
@@ -89,8 +90,7 @@ data RideT f = RideT
     vehicleModel :: B.C f Kernel.Prelude.Text,
     vehicleNumber :: B.C f Kernel.Prelude.Text,
     vehicleServiceTierType :: B.C f (Kernel.Prelude.Maybe Domain.Types.ServiceTierType.ServiceTierType),
-    vehicleVariant :: B.C f Domain.Types.VehicleVariant.VehicleVariant,
-        tipAmount :: B.C f (Kernel.Prelude.Maybe Kernel.Types.Common.HighPrecMoney)
+    vehicleVariant :: B.C f Domain.Types.VehicleVariant.VehicleVariant
   }
   deriving (Generic, B.Beamable)
 

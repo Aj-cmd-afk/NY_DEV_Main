@@ -158,3 +158,8 @@ ALTER TABLE atlas_app.ride ADD COLUMN safety_journey_status text ;
 ALTER TABLE atlas_app.ride ADD COLUMN destination_reached_at timestamp with time zone ;
 
 ALTER TABLE atlas_app.ride ADD COLUMN tip_amount numeric(30,2) ;
+
+------- SQL updates -------
+
+ALTER TABLE atlas_app.ride ADD COLUMN payment_status text ;
+
