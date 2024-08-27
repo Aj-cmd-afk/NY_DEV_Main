@@ -185,6 +185,7 @@ let RiderJobType =
       | SafetyCSAlert
       | CheckExotelCallStatusAndNotifyBPP
       | OtherJobTypes
+      | MetroIncentivePayout
       >
 
 let jobInfoMapx =
@@ -199,6 +200,7 @@ let jobInfoMapx =
         , mapValue = False
         }
       , { mapKey = RiderJobType.OtherJobTypes, mapValue = False }
+      , { mapKey = AllocatorJobType.MetroIncentivePayout, mapValue = True }
       ]
 
 let cacConfig =

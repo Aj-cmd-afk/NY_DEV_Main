@@ -30,6 +30,7 @@ module Tools.Payment
     createSetupIntent,
     deleteCard,
     getPaymentIntent,
+    ServiceNames (..),
   )
 where
 
@@ -188,4 +189,9 @@ runWithServiceConfig3 func getCfg merchantId merchantOperatingCityId req1 req2 r
 data PaymentServiceType = Normal | FRFSBooking
   deriving (Generic, FromJSON, ToJSON, Show, ToSchema, ToParamSchema)
 
+data ServiceNames = MetroCashback | Other
+  deriving (Generic, FromJSON, ToJSON, Show, ToSchema, ToParamSchema)
+
 $(mkHttpInstancesForEnum ''PaymentServiceType)
+
+$(mkHttpInstancesForEnum ''ServiceNames)

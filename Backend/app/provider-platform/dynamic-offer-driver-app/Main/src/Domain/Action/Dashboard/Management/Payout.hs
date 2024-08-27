@@ -309,6 +309,7 @@ castPayoutEntityName entity = case entity of
   DLP.BACKLOG -> DTP.BACKLOG
   DLP.DAILY_STATS_VIA_DASHBOARD -> DTP.DAILY_STATS_VIA_DASHBOARD
   DLP.RETRY_VIA_DASHBOARD -> DTP.RETRY_VIA_DASHBOARD
+  _ -> DTP.INVALID
 
 castPayoutOrderStatus :: TPayout.PayoutOrderStatus -> DDS.PayoutStatus
 castPayoutOrderStatus payoutOrderStatus =

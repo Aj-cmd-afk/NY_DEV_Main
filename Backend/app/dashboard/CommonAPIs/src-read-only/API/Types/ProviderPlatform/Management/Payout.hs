@@ -24,6 +24,7 @@ data EntityName
   | BACKLOG
   | DAILY_STATS_VIA_DASHBOARD
   | RETRY_VIA_DASHBOARD
+  | INVALID
   deriving stock (Eq, Show, Generic)
   deriving anyclass (ToJSON, FromJSON, ToSchema)
 
