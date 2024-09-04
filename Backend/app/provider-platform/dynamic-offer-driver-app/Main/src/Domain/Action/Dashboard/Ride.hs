@@ -254,6 +254,8 @@ rideInfo merchantId merchantOpCityId reqRideId = do
   ride <- runInReplica $ QRide.findById rideId >>= fromMaybeM (RideDoesNotExist rideId.getId)
   rideDetails <- runInReplica $ QRideDetails.findById rideId >>= fromMaybeM (RideNotFound rideId.getId) -- FIXME RideDetailsNotFound
   booking <- runInReplica $ QBooking.findById ride.bookingId >>= fromMaybeM (BookingNotFound rideId.getId)
+  stopLocationIds <- runInReplica $ QLM.findAllStopIds booking.id
+  stopLocations <- runInReplica $ QLoc.findById <$> stopLocationIds
   mQuote <- runInReplica $ DQ.findById (Id booking.quoteId)
   let driverId = ride.driverId
   city <- CQMOC.findById ride.merchantOperatingCityId >>= fromMaybeM (MerchantOperatingCityNotFound $ "merchantOpCityId: " <> ride.merchantOperatingCityId.getId)
@@ -344,7 +346,8 @@ rideInfo merchantId merchantOpCityId reqRideId = do
         mbDefaultServiceTierName = rideDetails.defaultServiceTierName,
         rideCity = Just $ show city.city,
         merchantOperatingCityId = Just ride.merchantOperatingCityId.getId,
-        rideCreatedAt = ride.createdAt
+        rideCreatedAt = ride.createdAt,
+        stopLocations = map mkLocationAPIEntity stopLocations
       }
 
 -- TODO :: Deprecated, please do not maintain this in future. `DeprecatedTripCategory` is replaced with `TripCategory`
