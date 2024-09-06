@@ -100,15 +100,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1712070079,
-        "narHash": "sha256-86RYnQ2H/hMFaeUBGJEiRqjsEXgp5EUIc9o4zrVO9CQ=",
+        "lastModified": 1725628537,
+        "narHash": "sha256-CnlKPQxZdM8KUukabRhcaS8sYrCrK454rook+99N2A0=",
         "owner": "nammayatri",
         "repo": "beckn-gateway",
-        "rev": "5602bec438b89047a6182403a103632a1c9686bb",
+        "rev": "0bc3095a372129304af22bb2bd16eef57125280d",
         "type": "github"
       },
       "original": {
         "owner": "nammayatri",
+        "ref": "fix/remove-city-enum-usage",
         "repo": "beckn-gateway",
         "type": "github"
       }
