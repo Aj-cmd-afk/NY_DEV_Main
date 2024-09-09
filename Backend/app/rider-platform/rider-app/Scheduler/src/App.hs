@@ -64,8 +64,8 @@ schedulerHandle flowRt env =
           & putJobHandlerInList (liftIO . runFlowR flowRt env . sendCallPoliceApi)
           & putJobHandlerInList (liftIO . runFlowR flowRt env . checkExotelCallStatusAndNotifyBPP)
           & putJobHandlerInList (liftIO . runFlowR flowRt env . sendSafetyCSAlert)
-          & putJobHandlerInList (liftIO . runFlowR flowRt env . sendExecutePaymentIntent)
-          & putJobHandlerInList (liftIO . runFlowR flowRt env . sendCancelExecutePaymentIntent)
+          & putJobHandlerInList (liftIO . runFlowR flowRt env . executePaymentIntentJob)
+          & putJobHandlerInList (liftIO . runFlowR flowRt env . cancelExecutePaymentIntentJob)
     }
 
 runRiderAppScheduler ::
